@@ -14,9 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <div className="min-h-screen bg-background text-foreground">
+          <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden">
             <Sidebar />
-            <main className="min-h-screen lg:ml-64">
+            <main className="flex-1 min-w-0">
               <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
                 {children}
               </div>
