@@ -1,6 +1,8 @@
 'use client';
 
-import { getDashboardMetrics, getRecentLoads, getRecentInvoices, getDrivers, getTrucks, getLoadsByStatus } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { getDashboardMetrics, getRecentLoads, getRecentInvoices, getTrucks, getDrivers, getLoadsByStatus } from '@/lib/data';
+import { DashboardMetrics, Load, Invoice } from '@/lib/types';
 import { Truck, Users, Package, DollarSign, Clock, AlertCircle, ArrowUpRight } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Link from 'next/link';
@@ -12,17 +14,38 @@ const customerNames: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const metrics = getDashboardMetrics();
-  const recentLoads = getRecentLoads(5);
-  const recentInvoices = getRecentInvoices(5);
-  const loadsByStatus = getLoadsByStatus();
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [recentLoads, setRecentLoads] = useState<Load[]>([]);
+  const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
+  const [loadsByStatus, setLoadsByStatus] = useState<{ status: string; count: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [m, rl, ri, lbs] = await Promise.all([
+        getDashboardMetrics(),
+        getRecentLoads(5),
+        getRecentInvoices(5),
+        getLoadsByStatus()
+      ]);
+      setMetrics(m);
+      setRecentLoads(rl);
+      setRecentInvoices(ri);
+      setLoadsByStatus(lbs);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+  if (!metrics) return null;
 
   const kpiCards = [
-    { label: 'Active Trucks', value: metrics.activeTrucks, total: getTrucks().length, icon: Truck, color: 'bg-blue-600' },
-    { label: 'Active Drivers', value: metrics.activeDrivers, total: getDrivers().length, icon: Users, color: 'bg-emerald-600' },
+    { label: 'Active Trucks', value: metrics.activeTrucks, total: '—', icon: Truck, color: 'bg-blue-600' },
+    { label: 'Active Drivers', value: metrics.activeDrivers, total: '—', icon: Users, color: 'bg-emerald-600' },
     { label: 'In Transit', value: metrics.loadsInTransit, icon: Package, color: 'bg-cyan-600' },
     { label: 'Pending Loads', value: metrics.pendingLoads, icon: Clock, color: 'bg-amber-600' },
-    { label: 'Delivered Today', value: metrics.deliveredToday, icon: AlertCircle, color: 'bg-violet-600' },
+    { label: 'Delivered', value: metrics.deliveredToday, icon: AlertCircle, color: 'bg-violet-600' },
     { label: 'Revenue (Paid)', value: `$${metrics.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-indigo-600' },
   ];
 
@@ -30,21 +53,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {kpiCards.map((kpi) => (
-          <Link
-            key={kpi.label}
-            href={kpi.total !== undefined && (kpi.label === 'Active Trucks' || kpi.label === 'Active Drivers') ? (kpi.label === 'Active Trucks' ? '/trucks' : '/drivers') : '/loads'}
-            className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all"
-          >
+          <Link key={kpi.label} href="/loads" className="group rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 ${kpi.color} rounded-lg flex items-center justify-center text-white shadow-sm`}>
                 <kpi.icon size={20} />
@@ -52,7 +68,7 @@ export default function DashboardPage() {
               <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
             </div>
             <p className="text-2xl font-bold text-card-foreground">{kpi.value}</p>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">{kpi.label}{kpi.total !== undefined ? ` (of ${kpi.total})` : ''}</p>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">{kpi.label}</p>
           </Link>
         ))}
       </div>

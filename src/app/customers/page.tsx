@@ -1,9 +1,18 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { getCustomers } from '@/lib/data';
 import { UserCircle, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function CustomersPage() {
-  const customers = getCustomers();
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCustomers().then(data => { setCustomers(data); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,9 +23,7 @@ export default function CustomersPage() {
         {customers.map((c) => (
           <div key={c.id} className="rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <UserCircle size={22} />
-              </div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><UserCircle size={22} /></div>
               <div>
                 <h3 className="font-semibold text-card-foreground">{c.name}</h3>
                 <p className="text-xs text-muted-foreground">{c.company}</p>

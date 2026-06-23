@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { getLoads } from '@/lib/data';
 import { Package, MapPin, Calendar, DollarSign } from 'lucide-react';
 
@@ -12,7 +13,15 @@ const statusColors: Record<string, string> = {
 };
 
 export default function LoadsPage() {
-  const loads = getLoads();
+  const [loads, setLoads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getLoads().then(data => { setLoads(data); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,12 +43,12 @@ export default function LoadsPage() {
           <tbody>
             {loads.slice(0, 50).map((load) => (
               <tr key={load.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
-                <td className="px-4 py-3 font-medium text-card-foreground">{load.loadNumber}</td>
-                <td className="px-4 py-3 text-muted-foreground">{load.stops[0]?.address || '-'}</td>
-                <td className="px-4 py-3 text-muted-foreground">{load.stops[load.stops.length - 1]?.address || '-'}</td>
-                <td className="px-4 py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status] || 'bg-gray-100 text-gray-700'}`}>{load.status.replace('_', ' ')}</span></td>
-                <td className="px-4 py-3 font-medium text-card-foreground">${load.rate.toLocaleString()}</td>
-                <td className="px-4 py-3 text-muted-foreground">{new Date(load.createdAt).toLocaleDateString()}</td>
+                <td className="px-4 py-3 font-medium text-card-foreground">{load.load_number}</td>
+                <td className="px-4 py-3 text-muted-foreground">{load.stops?.[0]?.address || '-'}</td>
+                <td className="px-4 py-3 text-muted-foreground">{load.stops?.[load.stops?.length - 1]?.address || '-'}</td>
+                <td className="px-4 py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status] || 'bg-gray-100 text-gray-700'}`}>{load.status}</span></td>
+                <td className="px-4 py-3 font-medium text-card-foreground">${load.rate?.toLocaleString()}</td>
+                <td className="px-4 py-3 text-muted-foreground">{new Date(load.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { getInvoices } from '@/lib/data';
 import { Receipt, DollarSign, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -10,7 +11,15 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
-  const invoices = getInvoices();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getInvoices().then(data => { setInvoices(data); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div>
@@ -31,11 +40,11 @@ export default function InvoicesPage() {
           <tbody>
             {invoices.map(inv => (
               <tr key={inv.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
-                <td className="px-4 py-3 font-medium text-card-foreground">{inv.invoiceNumber}</td>
-                <td className="px-4 py-3 font-medium text-card-foreground">${inv.amount.toLocaleString()}</td>
+                <td className="px-4 py-3 font-medium text-card-foreground">{inv.invoice_number}</td>
+                <td className="px-4 py-3 font-medium text-card-foreground">${inv.amount?.toLocaleString()}</td>
                 <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[inv.status] || 'bg-gray-100 text-gray-700'}`}>{inv.status === 'paid' ? <CheckCircle2 size={14}/> : inv.status === 'overdue' ? <AlertCircle size={14}/> : <Clock size={14}/>}{inv.status}</span></td>
-                <td className="px-4 py-3 text-muted-foreground">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : '-'}</td>
-                <td className="px-4 py-3 text-muted-foreground">{inv.dueAt ? new Date(inv.dueAt).toLocaleDateString() : '-'}</td>
+                <td className="px-4 py-3 text-muted-foreground">{inv.issued_at ? new Date(inv.issued_at).toLocaleDateString() : '-'}</td>
+                <td className="px-4 py-3 text-muted-foreground">{inv.due_at ? new Date(inv.due_at).toLocaleDateString() : '-'}</td>
               </tr>
             ))}
           </tbody>

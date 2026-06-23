@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { getDrivers } from '@/lib/data';
 import { Users, Phone, Mail, MapPin } from 'lucide-react';
 
@@ -11,7 +12,15 @@ const statusColors: Record<string, string> = {
 };
 
 export default function DriversPage() {
-  const drivers = getDrivers();
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDrivers().then(data => { setDrivers(data); setLoading(false); });
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div>
@@ -23,10 +32,10 @@ export default function DriversPage() {
           <div key={d.id} className="rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">{d.firstName[0]}{d.lastName[0]}</div>
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">{d.first_name?.[0]}{d.last_name?.[0]}</div>
                 <div>
-                  <h3 className="font-semibold text-card-foreground">{d.firstName} {d.lastName}</h3>
-                  <p className="text-xs text-muted-foreground">CDL #{d.licenseNumber}</p>
+                  <h3 className="font-semibold text-card-foreground">{d.first_name} {d.last_name}</h3>
+                  <p className="text-xs text-muted-foreground">CDL #{d.license_number}</p>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[d.status] || 'bg-gray-100 text-gray-700'}`}>{d.status.replace('_', ' ')}</span>
@@ -36,7 +45,7 @@ export default function DriversPage() {
               <div className="flex items-center gap-2 text-muted-foreground"><Phone size={14} />{d.phone}</div>
               <div className="flex justify-between pt-2 border-t border-border">
                 <span className="text-muted-foreground">Pay Rate</span>
-                <span className="font-medium text-card-foreground">{d.payRate} {d.payType === 'per_mile' ? '$/mi' : d.payType === 'percentage' ? '%' : 'flat'}</span>
+                <span className="font-medium text-card-foreground">{d.pay_rate} {d.pay_type === 'per_mile' ? '$/mi' : d.pay_type === 'percentage' ? '%' : 'flat'}</span>
               </div>
             </div>
           </div>

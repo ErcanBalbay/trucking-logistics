@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getLoads, getTrucks, getDrivers, updateLoad } from '@/lib/data';
 import { ClipboardList, Truck, User, ArrowRight, CheckCircle2 } from 'lucide-react';
 
@@ -13,17 +13,24 @@ const statusColors: Record<string, string> = {
 };
 
 export default function DispatchingPage() {
-  const loads = getLoads();
-  const trucks = getTrucks();
-  const drivers = getDrivers();
+  const [loads, setLoads] = useState<any[]>([]);
+  const [trucks, setTrucks] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getLoads(), getTrucks(), getDrivers()]).then(([l, t, d]) => { setLoads(l); setTrucks(t); setDrivers(d); setLoading(false); });
+  }, []);
 
   const pending = loads.filter(l => l.status === 'pending');
   const active = loads.filter(l => ['assigned', 'picked_up', 'in_transit'].includes(l.status));
 
   function assign(loadId: string, truckId: string, driverId: string) {
     updateLoad(loadId, { truckId, driverId, status: 'assigned' });
-    (window as any).location.reload();
+    setLoads(prev => prev.map(l => l.id === loadId ? { ...l, status: 'assigned', truckId, driverId } : l));
   }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -33,21 +40,14 @@ export default function DispatchingPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Pending Loads */}
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <ClipboardList className="text-amber-600" size={20} />
-            <h2 className="font-semibold text-card-foreground">Pending Loads ({pending.length})</h2>
-          </div>
+          <div className="flex items-center gap-2 mb-4"><ClipboardList className="text-amber-600" size={20} /><h2 className="font-semibold text-card-foreground">Pending Loads ({pending.length})</h2></div>
           <div className="space-y-3">
             {pending.map(load => (
               <div key={load.id} className="rounded-lg border border-border bg-background p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-medium text-card-foreground">{load.loadNumber}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{load.stops[0]?.address} → {load.stops[load.stops.length - 1]?.address}</p>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status]}`}>{load.status.replace('_', ' ')}</span>
+                  <div><p className="font-medium text-card-foreground">{load.load_number}</p><p className="text-xs text-muted-foreground mt-1">{load.stops?.[0]?.address} → {load.stops?.[load.stops?.length - 1]?.address}</p></div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status]}`}>{load.status}</span>
                 </div>
                 <AssignForm load={load} trucks={trucks} drivers={drivers} onAssign={assign} />
               </div>
@@ -56,12 +56,8 @@ export default function DispatchingPage() {
           </div>
         </div>
 
-        {/* Active Loads */}
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="text-emerald-600" size={20} />
-            <h2 className="font-semibold text-card-foreground">Active Loads ({active.length})</h2>
-          </div>
+          <div className="flex items-center gap-2 mb-4"><CheckCircle2 className="text-emerald-600" size={20} /><h2 className="font-semibold text-card-foreground">Active Loads ({active.length})</h2></div>
           <div className="space-y-3">
             {active.map(load => {
               const truck = trucks.find(t => t.id === load.truckId);
@@ -69,15 +65,12 @@ export default function DispatchingPage() {
               return (
                 <div key={load.id} className="rounded-lg border border-border bg-background p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-card-foreground">{load.loadNumber}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{load.stops[0]?.address} → {load.stops[load.stops.length - 1]?.address}</p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status]}`}>{load.status.replace('_', ' ')}</span>
+                    <div><p className="font-medium text-card-foreground">{load.load_number}</p><p className="text-xs text-muted-foreground mt-1">{load.stops?.[0]?.address} → {load.stops?.[load.stops?.length - 1]?.address}</p></div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[load.status]}`}>{load.status}</span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
                     {truck && <span className="flex items-center gap-1"><Truck size={14} />{truck.plate}</span>}
-                    {driver && <span className="flex items-center gap-1"><User size={14} />{driver.firstName} {driver.lastName}</span>}
+                    {driver && <span className="flex items-center gap-1"><User size={14} />{driver.first_name} {driver.last_name}</span>}
                   </div>
                 </div>
               );
@@ -90,7 +83,7 @@ export default function DispatchingPage() {
   );
 }
 
-function AssignForm({ load, trucks, drivers, onAssign }: { load: any, trucks: any[], drivers: any[], onAssign: (id: string, t: string, d: string) => void }) {
+function AssignForm({ load, trucks, drivers, onAssign }: { load: any; trucks: any[]; drivers: any[]; onAssign: (id: string, t: string, d: string) => void }) {
   const [truckId, setTruckId] = useState('');
   const [driverId, setDriverId] = useState('');
   const availableTrucks = trucks.filter(t => t.status === 'active' || t.status === 'available');
@@ -104,15 +97,9 @@ function AssignForm({ load, trucks, drivers, onAssign }: { load: any, trucks: an
       </select>
       <select value={driverId} onChange={e => setDriverId(e.target.value)} className="px-2 py-1.5 rounded-md border border-border bg-background text-xs text-foreground">
         <option value="">Select driver...</option>
-        {availableDrivers.map(d => <option key={d.id} value={d.id}>{d.firstName} {d.lastName}</option>)}
+        {availableDrivers.map(d => <option key={d.id} value={d.id}>{d.first_name} {d.last_name}</option>)}
       </select>
-      <button
-        disabled={!truckId || !driverId}
-        onClick={() => onAssign(load.id, truckId, driverId)}
-        className="col-span-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Assign <ArrowRight size={14} />
-      </button>
+      <button disabled={!truckId || !driverId} onClick={() => onAssign(load.id, truckId, driverId)} className="col-span-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Assign <ArrowRight size={14} /></button>
     </div>
   );
 }

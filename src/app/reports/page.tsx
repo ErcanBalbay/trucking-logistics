@@ -1,13 +1,25 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { getDashboardMetrics, getLoadsByStatus, getTrucks, getDrivers, getInvoices } from '@/lib/data';
 import { BarChart3, TrendingUp, Truck, Users, Package, DollarSign, AlertTriangle } from 'lucide-react';
 
 export default function ReportsPage() {
-  const metrics = getDashboardMetrics();
-  const byStatus = getLoadsByStatus();
-  const trucks = getTrucks();
-  const drivers = getDrivers();
-  const invoices = getInvoices();
+  const [metrics, setMetrics] = useState<any>(null);
+  const [byStatus, setByStatus] = useState<{ status: string; count: number }[]>([]);
+  const [trucks, setTrucks] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getDashboardMetrics(), getLoadsByStatus(), getTrucks(), getDrivers(), getInvoices()]).then(([m, bs, t, d, i]) => {
+      setMetrics(m); setByStatus(bs); setTrucks(t); setDrivers(d); setInvoices(i); setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
+  if (!metrics) return null;
+
   const total = invoices.length;
   const paid = invoices.filter(i => i.status === 'paid').length;
   const overdue = invoices.filter(i => i.status === 'overdue').length;
